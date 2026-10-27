@@ -1,0 +1,37 @@
+name: Keep Kiara posting
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Backup clock. A running shift handles the half hours itself.
+    - cron: "8,38 * * * *"
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Skip when a shift is already running
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          count=$(gh run list --repo mrkgrm/kiara-keepalive --workflow keep.yml --status in_progress --json databaseId,event --jq '[.[] | select(.event=="workflow_dispatch")] | length')
+          if [ "$count" != "0" ]; then
+            echo "A posting shift is already running"
+            echo "skip=true" >> "$GITHUB_ENV"
+          fi
+
+      - name: Post every 30 minutes, then start the next shift
+        if: env.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          set -u
+          for i in 1 2 3 4 5 6 7 8 9 10 11; do
+            gh workflow run kiara.yml --repo williamsarto/rg-bots-v2 -f mode=post || echo "Could not start the post run"
+            if [ "$i" -lt 11 ]; then
+              sleep 1800
+            fi
+          done
+          gh workflow run keep.yml --repo mrkgrm/kiara-keepalive
