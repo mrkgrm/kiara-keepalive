@@ -3,8 +3,8 @@ name: Keep Kiara posting
 on:
   workflow_dispatch:
   schedule:
-    # Backup clock. A running shift handles the half hours itself.
-    - cron: "8,38 * * * *"
+    # Starts a new shift only when the current one has died.
+    - cron: "3,13,23,33,43,53 * * * *"
 
 jobs:
   tick:
@@ -22,16 +22,16 @@ jobs:
             echo "skip=true" >> "$GITHUB_ENV"
           fi
 
-      - name: Post every 30 minutes, then start the next shift
+      - name: Post every 10 minutes, then start the next shift
         if: env.skip != 'true'
         env:
           GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
         run: |
           set -u
-          for i in 1 2 3 4 5 6 7 8 9 10 11; do
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
             gh workflow run kiara.yml --repo williamsarto/rg-bots-v2 -f mode=post || echo "Could not start the post run"
-            if [ "$i" -lt 11 ]; then
-              sleep 1800
+            if [ "$i" -lt 28 ]; then
+              sleep 600
             fi
           done
           gh workflow run keep.yml --repo mrkgrm/kiara-keepalive
